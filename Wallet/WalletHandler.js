@@ -62,8 +62,8 @@ var buyCredit = function (walletId, amount, user) {
                                 }
                                 var data = {
                                     StripeId: undefined,
-                                    Description: undefined,
-                                    CurrencyISO: undefined,
+                                    Description: "Buy Credit using Credit Card",
+                                    CurrencyISO: wallet.CurrencyISO,
                                     Credit: credit,
                                     Tag: undefined,
                                     TenantId: user.tenant,

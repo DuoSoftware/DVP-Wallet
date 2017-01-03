@@ -63,6 +63,22 @@ var setup_server = function (RestServer) {
         }
         return next();
     });
+    
+    RestServer.get('/DVP/API/' + version + '/PaymentManager/Wallet', authorization({
+        resource: "organisation",
+        action: "read"
+    }), function (req, res, next) {
+        try {
+            logger.info('[CreditBalance] - [HTTP]  - Request received -  Data - %s ', JSON.stringify(req.body));
+            walletHandler.CreditBalance(req, res);
+        }
+        catch (ex) {
+            logger.error('[CreditBalance] - [HTTP]  - Exception occurred -  Data - %s ', JSON.stringify(req.body), ex);
+            var jsonString = messageFormatter.FormatMessage(ex, "EXCEPTION", false, undefined);
+            res.end(jsonString);
+        }
+        return next();
+    });
 
     RestServer.post('/DVP/API/' + version + '/PaymentManager/Wallet', authorization({
         resource: "organisation",
@@ -112,21 +128,7 @@ var setup_server = function (RestServer) {
         return next();
     });
 
-    RestServer.get('/DVP/API/' + version + '/PaymentManager/Wallet', authorization({
-        resource: "organisation",
-        action: "read"
-    }), function (req, res, next) {
-        try {
-            logger.info('[CreditBalance] - [HTTP]  - Request received -  Data - %s ', JSON.stringify(req.body));
-            walletHandler.CreditBalance(req, res);
-        }
-        catch (ex) {
-            logger.error('[CreditBalance] - [HTTP]  - Exception occurred -  Data - %s ', JSON.stringify(req.body), ex);
-            var jsonString = messageFormatter.FormatMessage(ex, "EXCEPTION", false, undefined);
-            res.end(jsonString);
-        }
-        return next();
-    });
+    
 
     RestServer.get('/DVP/API/' + version + '/PaymentManager/Wallet/:WalletId', authorization({
         resource: "organisation",
