@@ -46,39 +46,44 @@ var buyCredit = function (walletId, amount, user) {
                         var credit = parseFloat(wallet.Credit) + amount;
                         DbConn.Wallet
                             .update(
-                            {
-                                Credit: credit
-                            },
-                            {
-                                where: [{WalletId: wallet.WalletId}]
+                                {
+                                    Credit: credit
+                                },
+                                {
+                                    where: [{WalletId: wallet.WalletId}]
+                                }
+                            ).then(function (cmp) {
+                            done();
+                            if (cmp[0] === 1) {
+                                deferred.resolve(credit);
                             }
-                        ).then(function (cmp) {
-                                done();
-                                if (cmp[0] === 1) {
-                                    deferred.resolve(credit);
-                                }
-                                else {
-                                    deferred.reject(new Error("Fail to Update Wallet. Please Contact System Administrator."));
-                                }
-                                var data = {
-                                    StripeId: undefined,
-                                    Description: "Buy Credit using Credit Card",
-                                    CurrencyISO: wallet.CurrencyISO,
-                                    Credit: credit,
-                                    Tag: undefined,
-                                    TenantId: user.tenant,
-                                    CompanyId: user.company,
-                                    OtherJsonData: {"amount":amount,"Balance":credit, "msg": "BuyCredit", "invokeBy": user.iss},
-                                    WalletId: cmp.WalletId,
-                                    Operation :  'BuyCredit',
-                                    InvokeBy :  user.iss,
-                                    Reason: "Buy Credit using Credit Card"
-                                };
-                                addHistory(data);
-                            }).error(function (err) {
-                                done();
-                                deferred.reject(err);
-                            });
+                            else {
+                                deferred.reject(new Error("Fail to Update Wallet. Please Contact System Administrator."));
+                            }
+                            var data = {
+                                StripeId: undefined,
+                                Description: "Buy Credit using Credit Card",
+                                CurrencyISO: wallet.CurrencyISO,
+                                Credit: credit,
+                                Tag: undefined,
+                                TenantId: user.tenant,
+                                CompanyId: user.company,
+                                OtherJsonData: {
+                                    "amount": amount,
+                                    "Balance": credit,
+                                    "msg": "BuyCredit",
+                                    "invokeBy": user.iss
+                                },
+                                WalletId: cmp.WalletId,
+                                Operation: 'BuyCredit',
+                                InvokeBy: user.iss,
+                                Reason: "Buy Credit using Credit Card"
+                            };
+                            addHistory(data);
+                        }).error(function (err) {
+                            done();
+                            deferred.reject(err);
+                        });
 
                     }, function (error) {
                         done();
@@ -112,44 +117,44 @@ var deductCredit = function (req, wallet, credit, amount) {
                 credit = credit - amount;
                 DbConn.Wallet
                     .update(
-                    {
-                        Credit: credit
-                    },
-                    {
-                        where: [{WalletId: wallet.WalletId}]
+                        {
+                            Credit: credit
+                        },
+                        {
+                            where: [{WalletId: wallet.WalletId}]
+                        }
+                    ).then(function (cmp) {
+                    done();
+                    if (cmp[0] === 1) {
+                        deferred.resolve(credit);
                     }
-                ).then(function (cmp) {
-                        done();
-                        if (cmp[0] === 1) {
-                            deferred.resolve(credit);
-                        }
-                        else {
-                            deferred.reject(new Error("Fail to Update Wallet. Please Contact System Administrator."));
-                        }
-                        var data = {
-                            StripeId: undefined,
-                            Description: req.body.Reason,
-                            CurrencyISO: undefined,
-                            Credit: credit,
-                            Tag: undefined,
-                            TenantId: req.user.tenant,
-                            CompanyId: req.user.company,
-                            OtherJsonData: {
-                                "msg": "DeductCredit",
-                                "amount": amount,"Balance":credit,
-                                "invokeBy": req.user.iss,
-                                "OtherJsonData": req.body.OtherJsonData
-                            },
-                            WalletId: cmp.WalletId,
-                            Operation :  'DeductCredit',
-                            InvokeBy :  req.user.iss,
-                            Reason: req.body.Reason? req.body.Reason:"Buy Credit using Credit Card"
-                        };
-                        addHistory(data);
-                    }).error(function (error) {
-                        done();
-                        deferred.reject(error);
-                    });
+                    else {
+                        deferred.reject(new Error("Fail to Update Wallet. Please Contact System Administrator."));
+                    }
+                    var data = {
+                        StripeId: undefined,
+                        Description: req.body.Reason,
+                        CurrencyISO: undefined,
+                        Credit: credit,
+                        Tag: undefined,
+                        TenantId: req.user.tenant,
+                        CompanyId: req.user.company,
+                        OtherJsonData: {
+                            "msg": "DeductCredit",
+                            "amount": amount, "Balance": credit,
+                            "invokeBy": req.user.iss,
+                            "OtherJsonData": req.body.OtherJsonData
+                        },
+                        WalletId: cmp.WalletId,
+                        Operation: 'DeductCredit',
+                        InvokeBy: req.user.iss,
+                        Reason: req.body.Reason ? req.body.Reason : "Buy Credit using Credit Card"
+                    };
+                    addHistory(data);
+                }).error(function (error) {
+                    done();
+                    deferred.reject(error);
+                });
             }
             else {
                 done();
@@ -166,45 +171,45 @@ module.exports.CreatePackage = function (req, res) {
     directPayment.DirectPayment(req.body).then(function (customer) {
         DbConn.Wallet
             .create(
-            {
-                Owner: req.user.iss,
-                StripeId: customer.id,
-                Description: req.body.Description,
-                Tag: req.body.Tag,
-                CurrencyISO: req.body.CurrencyISO,
-                Credit: req.body.Credit,
-                Status: true,
-                AutoRecharge: req.body.CurrencyISO,
-                AutoRechargeAmount: 0,
-                ThresholdValue: 0,
-                TenantId: req.user.tenant,
-                CompanyId: req.user.company
-            }
-        ).then(function (cmp) {
-                var jsonString = messageFormatter.FormatMessage(undefined, "EXCEPTION", true, cmp);
-                logger.info('CreatePackage - Create Wallet - [%s] .', jsonString);
-                req.body.WalletId = cmp.WalletId;
-                this.BuyCredit(req.body.Amount, req.body.user);
-                var data = {
+                {
+                    Owner: req.user.iss,
                     StripeId: customer.id,
                     Description: req.body.Description,
-                    CurrencyISO: req.body.CurrencyISO,
-                    Credit: 0,
                     Tag: req.body.Tag,
+                    CurrencyISO: req.body.CurrencyISO,
+                    Credit: req.body.Credit,
+                    Status: true,
+                    AutoRecharge: req.body.CurrencyISO,
+                    AutoRechargeAmount: 0,
+                    ThresholdValue: 0,
                     TenantId: req.user.tenant,
-                    CompanyId: req.user.company,
-                    OtherJsonData: {"msg": "Create New Wallet", "invokeBy": req.user.iss},
-                    WalletId: cmp.WalletId,
-                    Operation :  'CreatePackage',
-                    InvokeBy :  req.user.iss,
-                    Reason: "Create Package"
-                };
-                addHistory(data);
-            }).error(function (err) {
-                var jsonString = messageFormatter.FormatMessage(err, "EXCEPTION", false, undefined);
-                logger.error('CreatePackage - Fail To Create Wallet. - [%s] .', jsonString);
-                res.end(jsonString);
-            });
+                    CompanyId: req.user.company
+                }
+            ).then(function (cmp) {
+            var jsonString = messageFormatter.FormatMessage(undefined, "EXCEPTION", true, cmp);
+            logger.info('CreatePackage - Create Wallet - [%s] .', jsonString);
+            req.body.WalletId = cmp.WalletId;
+            this.BuyCredit(req.body.Amount, req.body.user);
+            var data = {
+                StripeId: customer.id,
+                Description: req.body.Description,
+                CurrencyISO: req.body.CurrencyISO,
+                Credit: 0,
+                Tag: req.body.Tag,
+                TenantId: req.user.tenant,
+                CompanyId: req.user.company,
+                OtherJsonData: {"msg": "Create New Wallet", "invokeBy": req.user.iss},
+                WalletId: cmp.WalletId,
+                Operation: 'CreatePackage',
+                InvokeBy: req.user.iss,
+                Reason: "Create Package"
+            };
+            addHistory(data);
+        }).error(function (err) {
+            var jsonString = messageFormatter.FormatMessage(err, "EXCEPTION", false, undefined);
+            logger.error('CreatePackage - Fail To Create Wallet. - [%s] .', jsonString);
+            res.end(jsonString);
+        });
 
     }, function (err) {
         var jsonString = messageFormatter.FormatMessage(err, "EXCEPTION", false, undefined);
@@ -220,44 +225,44 @@ module.exports.CreateWallet = function (req, res) {
 
         DbConn.Wallet
             .create(
-            {
-                Owner: req.user.iss,
-                StripeId: customer.id,
-                Description: req.body.Description,
-                Tag: req.body.Tag,
-                CurrencyISO: req.body.CurrencyISO,
-                Credit: 0,
-                Status: true,
-                AutoRecharge: req.body.AutoRecharge,
-                AutoRechargeAmount: 0,
-                ThresholdValue: 0,
-                TenantId: req.user.tenant,
-                CompanyId: req.user.company
-            }
-        ).then(function (cmp) {
-                var jsonString = messageFormatter.FormatMessage(undefined, "EXCEPTION", true, cmp);
-                logger.info('CreateWallet - Create Wallet - [%s] .', jsonString);
-                res.end(jsonString);
-                var data = {
+                {
+                    Owner: req.user.iss,
                     StripeId: customer.id,
                     Description: req.body.Description,
+                    Tag: req.body.Tag,
                     CurrencyISO: req.body.CurrencyISO,
                     Credit: 0,
-                    Tag: req.body.Tag,
+                    Status: true,
+                    AutoRecharge: req.body.AutoRecharge,
+                    AutoRechargeAmount: 0,
+                    ThresholdValue: 0,
                     TenantId: req.user.tenant,
-                    CompanyId: req.user.company,
-                    OtherJsonData: {"msg": "Create New Wallet", "invokeBy": req.user.iss},
-                    WalletId: cmp.WalletId,
-                    Operation :  'CreateWallet',
-                    InvokeBy :  req.user.iss,
-                    Reason: "Create Wallet"
-                };
-                addHistory(data);
-            }).error(function (err) {
-                var jsonString = messageFormatter.FormatMessage(err, "EXCEPTION", false, undefined);
-                logger.error('CreateWallet - Fail To Create Wallet. - [%s] .', jsonString);
-                res.end(jsonString);
-            });
+                    CompanyId: req.user.company
+                }
+            ).then(function (cmp) {
+            var jsonString = messageFormatter.FormatMessage(undefined, "EXCEPTION", true, cmp);
+            logger.info('CreateWallet - Create Wallet - [%s] .', jsonString);
+            res.end(jsonString);
+            var data = {
+                StripeId: customer.id,
+                Description: req.body.Description,
+                CurrencyISO: req.body.CurrencyISO,
+                Credit: 0,
+                Tag: req.body.Tag,
+                TenantId: req.user.tenant,
+                CompanyId: req.user.company,
+                OtherJsonData: {"msg": "Create New Wallet", "invokeBy": req.user.iss},
+                WalletId: cmp.WalletId,
+                Operation: 'CreateWallet',
+                InvokeBy: req.user.iss,
+                Reason: "Create Wallet"
+            };
+            addHistory(data);
+        }).error(function (err) {
+            var jsonString = messageFormatter.FormatMessage(err, "EXCEPTION", false, undefined);
+            logger.error('CreateWallet - Fail To Create Wallet. - [%s] .', jsonString);
+            res.end(jsonString);
+        });
 
     }, function (err) {
         var jsonString = messageFormatter.FormatMessage(err, "EXCEPTION", false, undefined);
@@ -337,38 +342,38 @@ module.exports.UpdateWallet = function (req, res) {
 
     DbConn.Wallet
         .update(
-        {
-            AutoRechargeAmount: req.body.AutoRechargeAmount,
-            AutoRecharge: req.body.AutoRecharge,
-            ThresholdValue: req.body.ThresholdValue
-        },
-        {
-            where: [{WalletId: req.params.WalletId}, {Owner: req.user.iss}, {TenantId: req.user.tenant}, {CompanyId: req.user.company}, {Status: true}]
-        }
-    ).then(function (cmp) {
-            var jsonString = messageFormatter.FormatMessage(undefined, "EXCEPTION", true, cmp);
-            logger.info('UpdateWallet - Update Wallet - [%s] .', jsonString);
-            res.end(jsonString);
-            var data = {
-                StripeId: "",
-                Description: req.body.Description,
-                CurrencyISO: "",
-                Credit: 0,
-                Tag: req.body.Tag,
-                TenantId: req.user.tenant,
-                CompanyId: req.user.company,
-                OtherJsonData: {"Data": req.body, "invokeBy": req.user.iss},
-                WalletId: cmp.WalletId,
-                Operation :  'UpdateWallet',
-                InvokeBy :  req.user.iss,
-                Reason: "Apply Configurations"
-            };
-            addHistory(data);
-        }).error(function (err) {
-            var jsonString = messageFormatter.FormatMessage(err, "EXCEPTION", false, undefined);
-            logger.error('UpdateWallet - Fail To Update Wallet. - [%s] .', jsonString);
-            res.end(jsonString);
-        });
+            {
+                AutoRechargeAmount: req.body.AutoRechargeAmount,
+                AutoRecharge: req.body.AutoRecharge,
+                ThresholdValue: req.body.ThresholdValue
+            },
+            {
+                where: [{WalletId: req.params.WalletId}, {Owner: req.user.iss}, {TenantId: req.user.tenant}, {CompanyId: req.user.company}, {Status: true}]
+            }
+        ).then(function (cmp) {
+        var jsonString = messageFormatter.FormatMessage(undefined, "EXCEPTION", true, cmp);
+        logger.info('UpdateWallet - Update Wallet - [%s] .', jsonString);
+        res.end(jsonString);
+        var data = {
+            StripeId: "",
+            Description: req.body.Description,
+            CurrencyISO: "",
+            Credit: 0,
+            Tag: req.body.Tag,
+            TenantId: req.user.tenant,
+            CompanyId: req.user.company,
+            OtherJsonData: {"Data": req.body, "invokeBy": req.user.iss},
+            WalletId: cmp.WalletId,
+            Operation: 'UpdateWallet',
+            InvokeBy: req.user.iss,
+            Reason: "Apply Configurations"
+        };
+        addHistory(data);
+    }).error(function (err) {
+        var jsonString = messageFormatter.FormatMessage(err, "EXCEPTION", false, undefined);
+        logger.error('UpdateWallet - Fail To Update Wallet. - [%s] .', jsonString);
+        res.end(jsonString);
+    });
 };
 
 module.exports.BuyCredit = function (req, res) {
@@ -631,7 +636,7 @@ module.exports.DeductCredit = function (req, res) {
                 if (wallet.AutoRecharge) {
                     if (wallet.ThresholdValue > credit) {
                         var b = wallet.AutoRechargeAmount - credit;
-                        if(b>0 && b>amount){
+                        if (b > 0 && b > amount) {
                             buyCredit(wallet.WalletId, b, req.body.user).then(function (cmp) {
                                 if (cmp > amount) {
                                     deductCredit(req, wallet, credit, amount).then(function (cmp) {
@@ -656,13 +661,13 @@ module.exports.DeductCredit = function (req, res) {
                                 res.end(jsonString);
                             });
                         }
-                        else{
+                        else {
                             var jsonString = messageFormatter.FormatMessage(new Error("Insufficient  Credit Balance."), "EXCEPTION", false, undefined);
                             logger.error('[DeductCredit] - [%s] ', jsonString);
                             res.end(jsonString);
                         }
                     }
-                    else{
+                    else {
                         var jsonString = messageFormatter.FormatMessage(new Error("Insufficient  Credit Balance."), "EXCEPTION", false, undefined);
                         logger.error('[DeductCredit] - [%s] ', jsonString);
                         res.end(jsonString);
@@ -821,7 +826,7 @@ module.exports.DeductCreditFormCustomer = function (req, res) {
 module.exports.CreditBalance = function (req, res) {
 
     DbConn.Wallet.find({
-        where: [ {TenantId: req.user.tenant}, {CompanyId: req.user.company}, {Status: true}]
+        where: [{TenantId: req.user.tenant}, {CompanyId: req.user.company}, {Status: true}]
     }).then(function (wallet) {
         var jsonString = messageFormatter.FormatMessage(undefined, "EXCEPTION", true, 0);
         if (wallet) {
@@ -1061,80 +1066,240 @@ var addHistory = function (data) {
 
     DbConn.WalletHistory
         .create(
-        {
-            StripeId: data.customerId,
-            Description: data.Description,
-            CurrencyISO: data.CurrencyISO,
-            Credit: data.Credit,
-            TenantId: data.TenantId,
-            CompanyId: data.CompanyId,
-            OtherJsonData: data.OtherJsonData,
-            WalletId: data.WalletId,
-            Operation :  data.Operation,
-            InvokeBy :  data.InvokeBy,
-            Reason: data.Reason
-        }
-    ).then(function (cmp) {
-            var jsonString = messageFormatter.FormatMessage(undefined, "EXCEPTION", true, cmp);
-            logger.info('addHistory - Create WalletHistory - [%s] .', jsonString);
-        }).error(function (err) {
-            var jsonString = messageFormatter.FormatMessage(err, "EXCEPTION", false, undefined);
-            logger.error('addHistory - Fail To Create WalletHistory. - [%s] .', jsonString);
-        });
+            {
+                StripeId: data.customerId,
+                Description: data.Description,
+                CurrencyISO: data.CurrencyISO,
+                Credit: data.Credit,
+                TenantId: data.TenantId,
+                CompanyId: data.CompanyId,
+                OtherJsonData: data.OtherJsonData,
+                WalletId: data.WalletId,
+                Operation: data.Operation,
+                InvokeBy: data.InvokeBy,
+                Reason: data.Reason
+            }
+        ).then(function (cmp) {
+        var jsonString = messageFormatter.FormatMessage(undefined, "EXCEPTION", true, cmp);
+        logger.info('addHistory - Create WalletHistory - [%s] .', jsonString);
+    }).error(function (err) {
+        var jsonString = messageFormatter.FormatMessage(err, "EXCEPTION", false, undefined);
+        logger.error('addHistory - Fail To Create WalletHistory. - [%s] .', jsonString);
+    });
 
 };
 
 
 module.exports.getWalletHistory = function (req, res) {
 
-    var pageNo=req.params.pageNo;
-    var rowCount=req.params.rowCount;
+    var pageNo = req.params.pageNo;
+    var rowCount = req.params.rowCount;
 
 
     /*DbConn.Wallet.find({
-        where: [{Owner: req.user.iss}, {TenantId: req.user.tenant}, {CompanyId: req.user.company}, {Status: true}]
-    }).then(function (walletData) {
-        var jsonString ;
-        if (walletData) {*/
+     where: [{Owner: req.user.iss}, {TenantId: req.user.tenant}, {CompanyId: req.user.company}, {Status: true}]
+     }).then(function (walletData) {
+     var jsonString ;
+     if (walletData) {*/
 
-            DbConn.WalletHistory.findAll({
-                where:[{TenantId: req.user.tenant}, {CompanyId: req.user.company}],
-                order:[['createdAt','DESC']],
-                offset:((pageNo - 1) * rowCount),
-                limit: rowCount
+    DbConn.WalletHistory.findAll({
+        where: [{TenantId: req.user.tenant}, {CompanyId: req.user.company}],
+        order: [['createdAt', 'DESC']],
+        offset: ((pageNo - 1) * rowCount),
+        limit: rowCount
 
-            }).then(function (walletHistory) {
-                var jsonString;
-                if (walletHistory) {
+    }).then(function (walletHistory) {
+        var jsonString;
+        if (walletHistory) {
 
-                    jsonString = messageFormatter.FormatMessage(undefined, "SUCCESS", true, walletHistory);
-                    res.end(jsonString);
-                }
-                else {
-                    jsonString = messageFormatter.FormatMessage(undefined, "NO HISTORY RECORD FOUND", false, 0);
-                    res.end(jsonString);
-                }
-
-            }).error(function (err) {
-                var jsonString = messageFormatter.FormatMessage(err, "EXCEPTION", false, undefined);
-                logger.error('[wallet history ] - [%s] ', jsonString);
-                res.end(jsonString);
-            });
-
-        /*}
-        else
-        {
-            jsonString = messageFormatter.FormatMessage(undefined, "NO WALLET RECORD FOUND", false, 0);
+            jsonString = messageFormatter.FormatMessage(undefined, "SUCCESS", true, walletHistory);
+            res.end(jsonString);
+        }
+        else {
+            jsonString = messageFormatter.FormatMessage(undefined, "NO HISTORY RECORD FOUND", false, 0);
             res.end(jsonString);
         }
 
-
     }).error(function (err) {
         var jsonString = messageFormatter.FormatMessage(err, "EXCEPTION", false, undefined);
-        logger.error('[Search wallet data ] - [%s] ', jsonString);
+        logger.error('[wallet history ] - [%s] ', jsonString);
         res.end(jsonString);
-    });*/
+    });
+
+    /*}
+     else
+     {
+     jsonString = messageFormatter.FormatMessage(undefined, "NO WALLET RECORD FOUND", false, 0);
+     res.end(jsonString);
+     }
 
 
+     }).error(function (err) {
+     var jsonString = messageFormatter.FormatMessage(err, "EXCEPTION", false, undefined);
+     logger.error('[Search wallet data ] - [%s] ', jsonString);
+     res.end(jsonString);
+     });*/
 
+
+};
+
+var LockCredit = function (amount, invokeBy, reason, tenant, company) {
+
+    var deferred = Q.defer();
+    DbConn.Wallet.find({
+        where: [{TenantId: tenant}, {CompanyId: company}, {Status: true}]
+    }).then(function (wallet) {
+        if (wallet) {
+            var walletId = wallet.WalletId;
+            lock(walletId, ttl, function (done) {
+                var credit = parseFloat(wallet.Credit);
+                if (credit > amount) {
+                    credit = credit - amount;
+                    DbConn.Wallet
+                        .update(
+                            {
+                                Credit: credit,
+                                LockCredit: amount
+                            },
+                            {
+                                where: [{WalletId: wallet.WalletId}]
+                            }
+                        ).then(function (cmp) {
+                        done();
+                        if (cmp[0] === 1) {
+                            deferred.resolve(credit);
+                        }
+                        else {
+                            deferred.reject(new Error("Fail to Update Wallet. Please Contact System Administrator."));
+                        }
+                        var data = {
+                            StripeId: undefined,
+                            Description: "Lock Credit",
+                            CurrencyISO: undefined,
+                            Credit: credit,
+                            Tag: undefined,
+                            TenantId: tenant,
+                            CompanyId: company,
+                            OtherJsonData: {
+                                "msg": "DeductCredit",
+                                "amount": amount, "Balance": credit,
+                                "LockCredit": amount,
+                                "invokeBy": invokeBy,
+                                "OtherJsonData": undefined
+                            },
+                            WalletId: cmp.WalletId,
+                            Operation: 'DeductCredit',
+                            InvokeBy: invokeBy,
+                            Reason: reason ? reason : "Credit Locked By System"
+                        };
+                        addHistory(data);
+                    }).error(function (error) {
+                        done();
+                        deferred.reject(error);
+                    });
+                }
+                else {
+                    done();
+                    deferred.reject(new Error("Insufficient  Credit Balance."));
+                }
+            });
+        }
+        else {
+            deferred.reject(new Error("Fail to Find Wallet. Please Contact System Administrator."));
+        }
+    }).error(function (err) {
+        deferred.reject(err);
+    });
+
+    return deferred.promise;
+
+};
+
+var ReleaseCredit = function (invokeBy, reason, tenant, company) {
+
+    var deferred = Q.defer();
+    DbConn.Wallet.find({
+        where: [{TenantId: tenant}, {CompanyId: company}, {Status: true}]
+    }).then(function (wallet) {
+        if (wallet) {
+            var walletId = wallet.WalletId;
+            lock(walletId, ttl, function (done) {
+                var credit = parseFloat(wallet.Credit) + parseFloat(wallet.LockCredit);
+                DbConn.Wallet
+                    .update(
+                        {
+                            Credit: credit,
+                            LockCredit: 0
+                        },
+                        {
+                            where: [{WalletId: wallet.WalletId}]
+                        }
+                    ).then(function (cmp) {
+                    done();
+                    if (cmp[0] === 1) {
+                        deferred.resolve(credit);
+                    }
+                    else {
+                        deferred.reject(new Error("Fail to Update Wallet. Please Contact System Administrator."));
+                    }
+                    var data = {
+                        StripeId: undefined,
+                        Description: "Release Credit",
+                        CurrencyISO: undefined,
+                        Credit: credit,
+                        Tag: undefined,
+                        TenantId: tenant,
+                        CompanyId: company,
+                        OtherJsonData: {
+                            "msg": "DeductCredit",
+                            "amount": wallet.LockCredit, "Balance": credit,
+                            "LockCredit": wallet.LockCredit,
+                            "invokeBy": invokeBy,
+                            "OtherJsonData": undefined
+                        },
+                        WalletId: cmp.WalletId,
+                        Operation: 'DeductCredit',
+                        InvokeBy: invokeBy,
+                        Reason: reason ? reason : "Credit Released By System"
+                    };
+                    addHistory(data);
+                }).error(function (error) {
+                    done();
+                    deferred.reject(error);
+                });
+            });
+        }
+        else {
+            deferred.reject(new Error("Fail to Find Wallet. Please Contact System Administrator."));
+        }
+    }).error(function (err) {
+        deferred.reject(err);
+    });
+
+    return deferred.promise;
+
+};
+
+module.exports.LockCreditFromCustomer = function (req, res) {
+    LockCredit(req.body.Amount, req.user.iss, req.body.Reason, req.user.tenant, req.user.company).then(function (cmp) {
+        var jsonString = messageFormatter.FormatMessage(undefined, "EXCEPTION", true, cmp);
+        logger.info('LockCreditFromCustomer - [%s] .', jsonString);
+        res.end(jsonString);
+    }, function (error) {
+        var jsonString = messageFormatter.FormatMessage(error, "EXCEPTION", false, undefined);
+        logger.error('LockCreditFromCustomer -  [%s] .', jsonString);
+        res.end(jsonString);
+    });
+};
+
+module.exports.ReleaseCreditFromCustomer = function (req, res) {
+    ReleaseCredit(req.user.iss, req.body.Reason, req.user.tenant, req.user.company).then(function (cmp) {
+        var jsonString = messageFormatter.FormatMessage(undefined, "EXCEPTION", true, cmp);
+        logger.info('ReleaseCredit - [%s] .', jsonString);
+        res.end(jsonString);
+    }, function (error) {
+        var jsonString = messageFormatter.FormatMessage(error, "EXCEPTION", false, undefined);
+        logger.error('ReleaseCredit -  [%s] .', jsonString);
+        res.end(jsonString);
+    });
 };
