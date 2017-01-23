@@ -142,12 +142,12 @@ var deductCredit = function (req, wallet, credit, amount) {
                         OtherJsonData: {
                             "msg": "DeductCredit",
                             "amount": amount, "Balance": credit,
-                            "invokeBy": req.user.iss,
+                            "invokeBy": req.body.name ? req.body.name :req.user.iss,
                             "OtherJsonData": req.body.OtherJsonData
                         },
                         WalletId: cmp.WalletId,
                         Operation: 'DeductCredit',
-                        InvokeBy: req.user.iss,
+                        InvokeBy: req.body.name ? req.body.name :req.user.iss,
                         Reason: req.body.Reason ? req.body.Reason : "Buy Credit using Credit Card"
                     };
                     addHistory(data);
