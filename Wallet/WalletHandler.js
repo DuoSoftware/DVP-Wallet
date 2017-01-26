@@ -637,7 +637,7 @@ module.exports.DeductCredit = function (req, res) {
                     if (wallet.ThresholdValue > credit) {
                         var b = wallet.AutoRechargeAmount - credit;
                         if (b > 0 && b > amount) {
-                            buyCredit(wallet.WalletId, b, req.body.user).then(function (cmp) {
+                            buyCredit(wallet.WalletId, b, req.user).then(function (cmp) {
                                 if (cmp > amount) {
                                     deductCredit(req, wallet, credit, amount).then(function (cmp) {
                                         var jsonString = messageFormatter.FormatMessage(undefined, "EXCEPTION", true, cmp);
@@ -702,7 +702,7 @@ module.exports.DeductCreditFormCustomer = function (req, res) {
         if (wallet) {
             var amount = parseFloat(req.body.Amount);
             var credit = parseFloat(wallet.Credit);
-            if (credit > amount) {
+            if (credit >= amount) {
                 deductCredit(req, wallet, credit, amount).then(function (cmp) {
                     var jsonString = messageFormatter.FormatMessage(undefined, "EXCEPTION", true, cmp);
                     logger.info('DeductCredit - Update Wallet - [%s] .', jsonString);
@@ -715,7 +715,7 @@ module.exports.DeductCreditFormCustomer = function (req, res) {
             }
             else {
                 if (wallet.AutoRecharge) {
-                    buyCredit(wallet.WalletId, wallet.AutoRechargeAmount, req.body.user).then(function (cmp) {
+                    buyCredit(wallet.WalletId, wallet.AutoRechargeAmount, req.user).then(function (cmp) {
                         if (cmp > amount) {
                             deductCredit(req, wallet, credit, amount).then(function (cmp) {
                                 var jsonString = messageFormatter.FormatMessage(undefined, "EXCEPTION", true, cmp);
