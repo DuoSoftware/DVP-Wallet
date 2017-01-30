@@ -50,7 +50,7 @@ var setup_server = function (RestServer) {
 
     RestServer.post('/DVP/API/' + version + '/PaymentManager/Wallet/Package', authorization({
         resource: "organisation",
-        action: "read"
+        action: "write"
     }), function (req, res, next) {
         try {
             logger.info('[CreateWallet] - [HTTP]  - Request received -  Data - %s ', JSON.stringify(req.body));
@@ -82,7 +82,7 @@ var setup_server = function (RestServer) {
 
     RestServer.post('/DVP/API/' + version + '/PaymentManager/Wallet', authorization({
         resource: "organisation",
-        action: "read"
+        action: "write"
     }), function (req, res, next) {
         try {
             logger.info('[CreateWallet] - [HTTP]  - Request received -  Data - %s ', JSON.stringify(req.body));
@@ -96,9 +96,41 @@ var setup_server = function (RestServer) {
         return next();
     });
 
+    RestServer.post('/DVP/API/' + version + '/PaymentManager/Wallet/Lock', authorization({
+        resource: "organisation",
+        action: "write"
+    }), function (req, res, next) {
+        try {
+            logger.info('[LockCreditFromCustomer] - [HTTP]  - Request received -  Data - %s ', JSON.stringify(req.body));
+            walletHandler.LockCreditFromCustomer(req, res);
+        }
+        catch (ex) {
+            logger.error('[LockCreditFromCustomer] - [HTTP]  - Exception occurred -  Data - %s ', JSON.stringify(req.body), ex);
+            var jsonString = messageFormatter.FormatMessage(ex, "EXCEPTION", false, undefined);
+            res.end(jsonString);
+        }
+        return next();
+    });
+
+    RestServer.post('/DVP/API/' + version + '/PaymentManager/Wallet/Release', authorization({
+        resource: "organisation",
+        action: "write"
+    }), function (req, res, next) {
+        try {
+            logger.info('[ReleaseCreditFromCustomer] - [HTTP]  - Request received -  Data - %s ', JSON.stringify(req.body));
+            walletHandler.ReleaseCreditFromCustomer(req, res);
+        }
+        catch (ex) {
+            logger.error('[ReleaseCreditFromCustomer] - [HTTP]  - Exception occurred -  Data - %s ', JSON.stringify(req.body), ex);
+            var jsonString = messageFormatter.FormatMessage(ex, "EXCEPTION", false, undefined);
+            res.end(jsonString);
+        }
+        return next();
+    });
+
     RestServer.post('/DVP/API/' + version + '/PaymentManager/Wallet/Bulk', authorization({
         resource: "organisation",
-        action: "read"
+        action: "write"
     }), function (req, res, next) {
         try {
             logger.info('[CreateWalletBulk] - [HTTP]  - Request received -  Data - %s ', JSON.stringify(req.body));
@@ -114,7 +146,7 @@ var setup_server = function (RestServer) {
 
     RestServer.put('/DVP/API/' + version + '/PaymentManager/Wallet/:WalletId', authorization({
         resource: "organisation",
-        action: "read"
+        action: "write"
     }), function (req, res, next) {
         try {
             logger.info('[UpdateWallet] - [HTTP]  - Request received -  Data - %s ', JSON.stringify(req.body));
@@ -127,8 +159,6 @@ var setup_server = function (RestServer) {
         }
         return next();
     });
-
-    
 
     RestServer.get('/DVP/API/' + version + '/PaymentManager/Wallet/:WalletId', authorization({
         resource: "organisation",
@@ -164,7 +194,7 @@ var setup_server = function (RestServer) {
 
     RestServer.post('/DVP/API/' + version + '/PaymentManager/Wallet/:WalletId/Credit', authorization({
         resource: "organisation",
-        action: "read"
+        action: "write"
     }), function (req, res, next) {
         try {
             logger.info('[BuyCredit] - [HTTP]  - Request received -  Data - %s ', JSON.stringify(req.body));
@@ -180,7 +210,7 @@ var setup_server = function (RestServer) {
 
     RestServer.post('/DVP/API/' + version + '/PaymentManager/Wallet/:WalletId/Credit/:cardId', authorization({
         resource: "organisation",
-        action: "read"
+        action: "write"
     }), function (req, res, next) {
         try {
             logger.info('[BuyCreditFormSelectedCard] - [HTTP]  - Request received -  Data - %s ', JSON.stringify(req.body));
@@ -196,7 +226,7 @@ var setup_server = function (RestServer) {
 
     RestServer.put('/DVP/API/' + version + '/PaymentManager/Wallet/:WalletId/Credit', authorization({
         resource: "organisation",
-        action: "read"
+        action: "write"
     }), function (req, res, next) {
         try {
             logger.info('[DeductCredit] - [HTTP]  - Request received -  Data - %s ', JSON.stringify(req.body));
@@ -212,7 +242,7 @@ var setup_server = function (RestServer) {
 
     RestServer.put('/DVP/API/' + version + '/PaymentManager/Customer/Wallet/Credit', authorization({
         resource: "organisation",
-        action: "read"
+        action: "write"
     }), function (req, res, next) {
         try {
             logger.info('[DeductCreditFormCustommer] - [HTTP]  - Request received -  Data - %s ', JSON.stringify(req.body));
@@ -228,7 +258,7 @@ var setup_server = function (RestServer) {
 
     RestServer.put('/DVP/API/' + version + '/PaymentManager/Wallet/:WalletId/Card', authorization({
         resource: "organisation",
-        action: "read"
+        action: "write"
     }), function (req, res, next) {
         try {
             logger.info('[AddNewCard] - [HTTP]  - Request received -  Data - %s ', JSON.stringify(req.body));
@@ -244,7 +274,7 @@ var setup_server = function (RestServer) {
 
     RestServer.del('/DVP/API/' + version + '/PaymentManager/Wallet/:WalletId/Card/:CardId', authorization({
         resource: "organisation",
-        action: "read"
+        action: "delete"
     }), function (req, res, next) {
         try {
             logger.info('[RemoveCard] - [HTTP]  - Request received -  Data - %s ', JSON.stringify(req.body));
@@ -260,7 +290,7 @@ var setup_server = function (RestServer) {
 
     RestServer.put('/DVP/API/' + version + '/PaymentManager/Wallet/:WalletId/Card/:CardId', authorization({
         resource: "organisation",
-        action: "read"
+        action: "write"
     }), function (req, res, next) {
         try {
             logger.info('[SetDefaultCard] - [HTTP]  - Request received -  Data - %s ', JSON.stringify(req.body));
