@@ -1188,7 +1188,7 @@ var LockCredit = function (sessionId,amount, invokeBy, reason, tenant, company) 
                             OtherJsonData: {
                                 "msg": "DeductCredit",
                                 "amount": amount, "Balance": credit,
-                                "LockCredit": amount,
+                                "LockCredit": lockCredit,
                                 "invokeBy": invokeBy,
                                 "OtherJsonData": "{'sessionId':"+sessionId+"}"
                             },
