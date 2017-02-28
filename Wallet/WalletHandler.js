@@ -135,13 +135,13 @@ var deductCredit = function (req, wallet, credit, amount) {
                         StripeId: undefined,
                         Description: req.body.Reason,
                         CurrencyISO: undefined,
-                        Credit: credit,
+                        Credit: credit + parseFloat(wallet.LockCredit),
                         Tag: undefined,
                         TenantId: req.user.tenant,
                         CompanyId: req.user.company,
                         OtherJsonData: {
                             "msg": "DeductCredit",
-                            "amount": amount, "Balance": credit,
+                            "amount": amount, "Balance": credit,"LockCredit":wallet.LockCredit,
                             "invokeBy": req.body.name ? req.body.name :req.user.iss,
                             "OtherJsonData": req.body.OtherJsonData
                         },
