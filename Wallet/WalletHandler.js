@@ -148,7 +148,7 @@ var deductCredit = function (req, wallet, credit, amount) {
                         WalletId: cmp.WalletId,
                         Operation: 'DeductCredit',
                         InvokeBy: req.body.name ? req.body.name :req.user.iss,
-                        Reason: req.body.Reason ? req.body.Reason : "Buy Credit using Credit Card"
+                        Reason: req.body.Reason ? req.body.Reason : "Deduct Credit using Credit Card"
                     };
                     addHistory(data);
                 }).error(function (error) {
