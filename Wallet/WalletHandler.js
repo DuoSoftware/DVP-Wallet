@@ -1242,7 +1242,7 @@ module.exports.getWalletHistory = function (req, res) {
      if (walletData) {*/
 
     DbConn.WalletHistory.findAll({
-        where: [{TenantId: req.user.tenant}, {CompanyId: req.user.company}],
+        where: [{TenantId: req.user.tenant}, {CompanyId: req.user.company},{Reason:'ChargesForCall'}],
         order: [['createdAt', 'DESC']],
         offset: ((pageNo - 1) * rowCount),
         limit: rowCount
