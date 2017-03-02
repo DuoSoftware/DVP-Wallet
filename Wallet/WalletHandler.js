@@ -136,7 +136,7 @@ var deductCredit = function (reqData, wallet, credit, amount) {
                         Description: reqData.description,
                         CurrencyISO: undefined,
                         Credit: credit + parseFloat(wallet.LockCredit),
-                        DeductCredit:amount,
+                        DeductCredit: amount,
                         Tag: undefined,
                         TenantId: reqData.user.tenant,
                         CompanyId: reqData.user.company,
@@ -1192,11 +1192,11 @@ var addHistory = function (data) {
 
 };
 
-var calculateChargeForSession = function (sessionId, credit, tenant, company, invokeBy) {
+var calculateChargeForSession = function (sessionId, credit, tenant, company, reason, invokeBy) {
 
     //dbModel.CallCDRProcessed.aggregate('HoldSec', 'avg', {where :[{CreatedTime : { gte: st , lt: et}, HoldSec: {gt: 0}, CompanyId: companyId, TenantId: tenantId, DVPCallDirection: 'inbound', AgentAnswered: true, ObjType: 'HTTAPI'}]}).then(function(holdAvg)
 
-    DbConn.WalletHistory.aggregate('DeductCredit', 'sum',{
+    DbConn.WalletHistory.aggregate('DeductCredit', 'sum', {
         where: [{TenantId: tenant}, {CompanyId: company}, {SessionID: sessionId}]
     }).then(function (cmp) {
         if (cmp) {
@@ -1205,12 +1205,12 @@ var calculateChargeForSession = function (sessionId, credit, tenant, company, in
                 Description: "Charges For Call Session " + sessionId,
                 CurrencyISO: "$",
                 Credit: credit,
-                DeductCredit:cmp,
+                DeductCredit: cmp,
                 Tag: undefined,
                 TenantId: tenant,
                 CompanyId: company,
                 OtherJsonData: {
-                    "amount":cmp,
+                    "amount": cmp,
                     "msg": "DeductCredit",
                     "ChargesForCall": cmp, "Balance": credit,
                     "invokeBy": invokeBy,
@@ -1219,7 +1219,7 @@ var calculateChargeForSession = function (sessionId, credit, tenant, company, in
                 //WalletId: cmp.WalletId,
                 Operation: 'ChargesForCall',
                 InvokeBy: invokeBy,
-                Reason: "ChargesForCall",
+                Reason: reason ? reason : "ChargesForCall",
                 SessionID: sessionId
             };
             addHistory(data)
@@ -1244,7 +1244,7 @@ module.exports.getWalletHistory = function (req, res) {
      if (walletData) {*/
 
     DbConn.WalletHistory.findAll({
-        where: [{TenantId: req.user.tenant}, {CompanyId: req.user.company},{Operation:'ChargesForCall'}],
+        where: [{TenantId: req.user.tenant}, {CompanyId: req.user.company}, {Operation: 'ChargesForCall'}],
         order: [['createdAt', 'DESC']],
         offset: ((pageNo - 1) * rowCount),
         limit: rowCount
@@ -1290,7 +1290,7 @@ var LockCredit = function (sessionId, amount, invokeBy, reason, tenant, company)
 
     var data = {SessionID: sessionId, TenantId: tenant, CompanyId: company};
     ValidateSessionData(data).then(function (val) {
-        if (val==undefined) {
+        if (val == undefined) {
             DbConn.Wallet.find({
                 where: [{TenantId: tenant}, {CompanyId: company}, {Status: true}]
             }).then(function (wallet) {
@@ -1328,7 +1328,7 @@ var LockCredit = function (sessionId, amount, invokeBy, reason, tenant, company)
                                     Description: "Lock Credit",
                                     CurrencyISO: undefined,
                                     Credit: credit,
-                                    LockCredit:amount,
+                                    LockCredit: amount,
                                     Tag: undefined,
                                     TenantId: tenant,
                                     CompanyId: company,
@@ -1379,7 +1379,7 @@ var ReleaseCredit = function (sessionId, amount, invokeBy, reason, tenant, compa
     var deferred = Q.defer();
     var data = {SessionID: sessionId, TenantId: tenant, CompanyId: company};
     ValidateSessionData(data).then(function (val) {
-        if (val==undefined) {
+        if (val == undefined) {
             deferred.reject(new Error("Invalid Session ID."));
         }
         else {
@@ -1436,7 +1436,7 @@ var ReleaseCredit = function (sessionId, amount, invokeBy, reason, tenant, compa
                             };
                             DeleteWalletSessionData(data);
                             addHistory(data);
-                            calculateChargeForSession(sessionId, credit, tenant, company, invokeBy);
+                            calculateChargeForSession(sessionId, credit, tenant, company, reason, invokeBy);
                         }).error(function (error) {
                             done();
                             deferred.reject(error);
