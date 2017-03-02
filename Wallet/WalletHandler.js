@@ -235,6 +235,119 @@ var deductCreditFromCustomer = function (reqData, amountDeduct, callback) {
 
 };
 
+var deductCreditFromTemp = function (sessionId,reason,invokeBy, tenant, company) {
+
+    var deferred = Q.defer();
+    if(sessionId && reason && invokeBy){
+        var data = {SessionID: sessionId, TenantId: tenant, CompanyId: company};
+        ValidateSessionData(data).then(function (val) {
+            if (val == undefined) {
+                deferred.reject(new Error("Invalid Session ID."));
+            }
+            else {
+                var amount = val.LockCredit;
+                DbConn.Wallet.find({
+                    where: [{TenantId: tenant}, {CompanyId: company}, {Status: true}]
+                }).then(function (wallet) {
+                    if (wallet) {
+                        var walletId = sessionId ? sessionId : wallet.WalletId;
+                        lock(walletId, ttl, function (done) {
+                            var lockCredit = parseFloat(wallet.LockCredit) - parseFloat(amount);
+                            if (lockCredit < 0) {
+                                deferred.reject(new Error("Invalid Amount. Please Contact System Administrator."));
+                                return;
+                            }
+                            var credit = parseFloat(wallet.Credit) + parseFloat(amount);
+
+                            DbConn.WalletSessionData
+                                .update(
+                                    {
+                                        LockCredit: 0
+                                    },
+                                    {
+                                        where: [{SessionID: sessionId}, {TenantId: tenant}, {CompanyId: company}]
+                                    }
+                                ).then(function (cmp) {
+
+                                if(cmp==1){
+                                    DbConn.Wallet
+                                        .update(
+                                            {
+                                                Credit: credit,
+                                                LockCredit: lockCredit
+                                            },
+                                            {
+                                                where: [{WalletId: wallet.WalletId}]
+                                            }
+                                        ).then(function (cmp) {
+                                        done();
+                                        if (cmp[0] === 1) {
+                                            deferred.resolve(true);
+                                        }
+                                        else {
+                                            deferred.reject(false);
+                                        }
+                                        var data = {
+                                            StripeId: undefined,
+                                            Description: "Release Locked Amount And Deduct",
+                                            CurrencyISO: undefined,
+                                            Credit: credit + parseFloat(wallet.LockCredit),
+                                            DeductCredit: amount,
+                                            Tag: undefined,
+                                            TenantId: tenant,
+                                            CompanyId: company,
+                                            OtherJsonData: {
+                                                "msg": "DeductCredit",
+                                                "amount": amount, "Balance": credit, "LockCredit": wallet.LockCredit,
+                                                "invokeBy": invokeBy,
+                                                "OtherJsonData": undefined
+                                            },
+                                            WalletId: wallet.WalletId,
+                                            Operation: 'DeductCredit',
+                                            InvokeBy: invokeBy,
+                                            Reason: reason ? reason : "Release And Deduct Credit",
+                                            SessionID: sessionId
+                                        };
+                                        addHistory(data);
+                                    }).error(function (error) {
+                                        done();
+                                        deferred.reject(false);
+                                    });
+                                }
+                                else {
+                                    deferred.reject(false);
+                                }
+
+
+                            }).error(function (err) {
+                                var jsonString = messageFormatter.FormatMessage(err, "EXCEPTION", false, undefined);
+                                logger.error('ValidateSessionData. - [%s] .', jsonString);
+                                done();
+                                deferred.reject(false);
+                            });
+                        });
+                    }
+                    else {
+                        deferred.reject(false);
+                    }
+                }).error(function (err) {
+                    deferred.reject(false);
+                });
+            }
+        }, function (error) {
+            deferred.reject(false);
+        });
+    }
+    else {
+        deferred.reject(false);
+    }
+
+    return deferred.promise;
+
+};
+
+module.exports.DeductCreditFromTemp = deductCreditFromTemp;
+
 module.exports.CreatePackage = function (req, res) {
 
     directPayment.DirectPayment(req.body).then(function (customer) {
@@ -1451,7 +1564,7 @@ var ReleaseCredit = function (sessionId, amount, invokeBy, reason, tenant, compa
             });
         }
     }, function (error) {
-
+        deferred.reject(error);
     });
 
     return deferred.promise;
