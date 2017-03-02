@@ -1204,11 +1204,13 @@ var calculateChargeForSession = function (sessionId, credit, tenant, company, in
                 StripeId: undefined,
                 Description: "Charges For Call Session " + sessionId,
                 CurrencyISO: "$",
-                Credit: cmp,
+                Credit: credit,
+                DeductCredit:cmp,
                 Tag: undefined,
                 TenantId: tenant,
                 CompanyId: company,
                 OtherJsonData: {
+                    "amount":cmp,
                     "msg": "DeductCredit",
                     "ChargesForCall": cmp, "Balance": credit,
                     "invokeBy": invokeBy,
@@ -1242,7 +1244,7 @@ module.exports.getWalletHistory = function (req, res) {
      if (walletData) {*/
 
     DbConn.WalletHistory.findAll({
-        where: [{TenantId: req.user.tenant}, {CompanyId: req.user.company},{Reason:'ChargesForCall'}],
+        where: [{TenantId: req.user.tenant}, {CompanyId: req.user.company},{Operation:'ChargesForCall'}],
         order: [['createdAt', 'DESC']],
         offset: ((pageNo - 1) * rowCount),
         limit: rowCount
