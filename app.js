@@ -256,6 +256,28 @@ var setup_server = function (RestServer) {
         return next();
     });
 
+    RestServer.put('/DVP/API/' + version + '/PaymentManager/Customer/Wallet/Credit/Temp', authorization({
+        resource: "organisation",
+        action: "write"
+    }), function (req, res, next) {
+        try {
+            logger.info('[DeductCreditFromTemp] - [HTTP]  - Request received -  Data - %s ', JSON.stringify(req.body));
+            walletHandler.DeductCreditFromTemp(req.body.SessionId,req.body.Reason,req.user.iss, req.user.tenant, req.user.company).then(function (val) {
+                var jsonString = messageFormatter.FormatMessage(undefined, "complete", val, undefined);
+                res.end(jsonString);
+            }, function (error) {
+                var jsonString = messageFormatter.FormatMessage(error, "complete", false, undefined);
+                res.end(jsonString);
+            });
+        }
+        catch (ex) {
+            logger.error('[DeductCreditFromTemp] - [HTTP]  - Exception occurred -  Data - %s ', JSON.stringify(req.body), ex);
+            var jsonString = messageFormatter.FormatMessage(ex, "EXCEPTION", false, undefined);
+            res.end(jsonString);
+        }
+        return next();
+    });
+
     RestServer.put('/DVP/API/' + version + '/PaymentManager/Wallet/:WalletId/Card', authorization({
         resource: "organisation",
         action: "write"
