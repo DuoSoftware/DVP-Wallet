@@ -49,7 +49,7 @@ var setup_server = function (RestServer) {
     RestServer.use(jwt({secret: secret.Secret}));
 
     RestServer.post('/DVP/API/' + version + '/PaymentManager/Wallet/Package', authorization({
-        resource: "organisation",
+        resource: "wallet",
         action: "write"
     }), function (req, res, next) {
         try {
@@ -65,7 +65,7 @@ var setup_server = function (RestServer) {
     });
     
     RestServer.get('/DVP/API/' + version + '/PaymentManager/Wallet', authorization({
-        resource: "organisation",
+        resource: "wallet",
         action: "read"
     }), function (req, res, next) {
         try {
@@ -81,7 +81,7 @@ var setup_server = function (RestServer) {
     });
 
     RestServer.post('/DVP/API/' + version + '/PaymentManager/Wallet', authorization({
-        resource: "organisation",
+        resource: "wallet",
         action: "write"
     }), function (req, res, next) {
         try {
@@ -97,7 +97,7 @@ var setup_server = function (RestServer) {
     });
 
     RestServer.post('/DVP/API/' + version + '/PaymentManager/Wallet/Lock', authorization({
-        resource: "organisation",
+        resource: "wallet",
         action: "write"
     }), function (req, res, next) {
         try {
@@ -113,7 +113,7 @@ var setup_server = function (RestServer) {
     });
 
     RestServer.post('/DVP/API/' + version + '/PaymentManager/Wallet/Release', authorization({
-        resource: "organisation",
+        resource: "wallet",
         action: "write"
     }), function (req, res, next) {
         try {
@@ -129,7 +129,7 @@ var setup_server = function (RestServer) {
     });
 
     RestServer.post('/DVP/API/' + version + '/PaymentManager/Wallet/Bulk', authorization({
-        resource: "organisation",
+        resource: "wallet",
         action: "write"
     }), function (req, res, next) {
         try {
@@ -145,7 +145,7 @@ var setup_server = function (RestServer) {
     });
 
     RestServer.put('/DVP/API/' + version + '/PaymentManager/Wallet/:WalletId', authorization({
-        resource: "organisation",
+        resource: "wallet",
         action: "write"
     }), function (req, res, next) {
         try {
@@ -161,7 +161,7 @@ var setup_server = function (RestServer) {
     });
 
     RestServer.get('/DVP/API/' + version + '/PaymentManager/Wallet/:WalletId', authorization({
-        resource: "organisation",
+        resource: "wallet",
         action: "read"
     }), function (req, res, next) {
         try {
@@ -177,7 +177,7 @@ var setup_server = function (RestServer) {
     });
 
     RestServer.get('/DVP/API/' + version + '/PaymentManager/Wallet/:WalletId/Cards', authorization({
-        resource: "organisation",
+        resource: "wallet",
         action: "read"
     }), function (req, res, next) {
         try {
@@ -193,7 +193,7 @@ var setup_server = function (RestServer) {
     });
 
     RestServer.post('/DVP/API/' + version + '/PaymentManager/Wallet/:WalletId/Credit', authorization({
-        resource: "organisation",
+        resource: "wallet",
         action: "write"
     }), function (req, res, next) {
         try {
@@ -209,7 +209,7 @@ var setup_server = function (RestServer) {
     });
 
     RestServer.post('/DVP/API/' + version + '/PaymentManager/Wallet/:WalletId/Credit/:cardId', authorization({
-        resource: "organisation",
+        resource: "wallet",
         action: "write"
     }), function (req, res, next) {
         try {
@@ -225,7 +225,7 @@ var setup_server = function (RestServer) {
     });
 
     RestServer.put('/DVP/API/' + version + '/PaymentManager/Wallet/:WalletId/Credit', authorization({
-        resource: "organisation",
+        resource: "wallet",
         action: "write"
     }), function (req, res, next) {
         try {
@@ -241,7 +241,7 @@ var setup_server = function (RestServer) {
     });
 
     RestServer.put('/DVP/API/' + version + '/PaymentManager/Customer/Wallet/Credit', authorization({
-        resource: "organisation",
+        resource: "wallet",
         action: "write"
     }), function (req, res, next) {
         try {
@@ -257,7 +257,7 @@ var setup_server = function (RestServer) {
     });
 
     RestServer.put('/DVP/API/' + version + '/PaymentManager/Customer/Wallet/Credit/Temp', authorization({
-        resource: "organisation",
+        resource: "wallet",
         action: "write"
     }), function (req, res, next) {
         try {
@@ -279,7 +279,7 @@ var setup_server = function (RestServer) {
     });
 
     RestServer.put('/DVP/API/' + version + '/PaymentManager/Wallet/:WalletId/Card', authorization({
-        resource: "organisation",
+        resource: "wallet",
         action: "write"
     }), function (req, res, next) {
         try {
@@ -295,7 +295,7 @@ var setup_server = function (RestServer) {
     });
 
     RestServer.del('/DVP/API/' + version + '/PaymentManager/Wallet/:WalletId/Card/:CardId', authorization({
-        resource: "organisation",
+        resource: "wallet",
         action: "delete"
     }), function (req, res, next) {
         try {
@@ -311,7 +311,7 @@ var setup_server = function (RestServer) {
     });
 
     RestServer.put('/DVP/API/' + version + '/PaymentManager/Wallet/:WalletId/Card/:CardId', authorization({
-        resource: "organisation",
+        resource: "wallet",
         action: "write"
     }), function (req, res, next) {
         try {
@@ -329,7 +329,7 @@ var setup_server = function (RestServer) {
 // ------------------------------------ Wallet history--- --------------------------------//
 
     RestServer.get('/DVP/API/' + version + '/PaymentManager/WalletHistory/:rowCount/:pageNo', authorization({
-        resource: "organisation",
+        resource: "wallet",
         action: "read"
     }), function (req, res, next) {
         try {
