@@ -8,7 +8,7 @@
     "collections": "^3.0.0",
     "config": "^1.19.0",
     "cors": "^2.7.1",
-    "dvp-common": "^0.5.6",
+    "dvp-common": "^0.8.4",
     "dvp-dbmodels": "^0.9.4",
     "enum": "^2.3.0",
     "fs": "0.0.2",
