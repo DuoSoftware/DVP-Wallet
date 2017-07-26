@@ -88,7 +88,7 @@ if(redismode != "cluster") {
                 db: redisdb});
         });
 
-        var client = new redis.Cluster([redisSetting]);
+        client = new redis.Cluster([redisSetting]);
 
     }else{
 
