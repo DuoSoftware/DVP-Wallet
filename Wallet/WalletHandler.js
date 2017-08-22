@@ -7,33 +7,126 @@ var logger = require('dvp-common/LogHandler/CommonLogHandler.js').logger;
 var DbConn = require('dvp-dbmodels');
 var moment = require('moment');
 var Sequelize = require('sequelize');
-var redis = require('redis');
+var redis = require('ioredis');
 var async = require("async");
 var config = require('config');
 var directPayment = require('../Stripe/DirectPayment');
 var Q = require('q');
+var Redlock = require('redlock')
 
-var client = redis.createClient(config.Redis.port, config.Redis.ip);
-client.auth(config.Redis.password);
-client.select(config.Redis.redisdb, redis.print);
-//client.select(config.Redis.redisdb, function () { /* ... */ });
+
+var ttl = config.Redis.ttl;
+
+var redisip = config.Redis.ip;
+var redisport = config.Redis.port;
+var redispass = config.Redis.password;
+var redismode = config.Redis.mode;
+var redisdb = config.Redis.db;
+
+var redisSetting =  {
+    port:redisport,
+    host:redisip,
+    family: 4,
+    password: redispass,
+    db: redisdb,
+    retryStrategy: function (times) {
+        var delay = Math.min(times * 50, 2000);
+        return delay;
+    },
+    reconnectOnError: function (err) {
+
+        return true;
+    }
+};
+
+
+if(redismode == 'sentinel'){
+
+    if(config.Redis.sentinels && config.Redis.sentinels.hosts && config.Redis.sentinels.port, config.Redis.sentinels.name){
+        var sentinelHosts = config.Redis.sentinels.hosts.split(',');
+        if(Array.isArray(sentinelHosts) && sentinelHosts.length > 2){
+            var sentinelConnections = [];
+
+            sentinelHosts.forEach(function(item){
+
+                sentinelConnections.push({host: item, port:config.Redis.sentinels.port})
+
+            });
+
+            redisSetting = {
+                sentinels:sentinelConnections,
+                name: config.Redis.sentinels.name,
+                password: redispass,
+                db: redisdb
+            }
+
+        }else{
+
+            console.log("No enough sentinel servers found .........");
+        }
+
+    }
+}
+
+var client = undefined;
+
+if(redismode != "cluster") {
+    client = new redis(redisSetting);
+}else{
+
+    var redisHosts = redisip.split(",");
+    if(Array.isArray(redisHosts)){
+
+
+        redisSetting = [];
+        redisHosts.forEach(function(item){
+            redisSetting.push({
+                host: item,
+                port: redisport,
+                family: 4,
+                password: redispass,
+                db: redisdb});
+        });
+
+        client = new redis.Cluster([redisSetting]);
+
+    }else{
+
+        client = new redis(redisSetting);
+    }
+
+
+}
+
 client.on("error", function (err) {
-    logger.error('error', 'Redis connection error :: %s', err);
-    console.log("Error " + err);
+    console.log('error', 'Redis connection error :: %s', err);
 });
 
 client.on("connect", function (err) {
-    client.select(config.Redis.redisdb, redis.print);
+    //client.select(config.Redis.redisDB, redis.print);
+    console.log("Redis Connect Success");
 });
-var lock = require("redis-lock")(client);
-var ttl = config.Redis.ttl;
+
+
+var redlock = new Redlock(
+    [client],
+    {
+        driftFactor: 0.01,
+
+        retryCount:  10000,
+
+        retryDelay:  200
+
+    }
+);
+
 
 var buyCredit = function (walletId, amount, user) {
 
     var deferred = Q.defer();
 
     if (walletId) {
-        lock(walletId, ttl, function (done) {
+        redlock.lock('lock:'+walletId, ttl).then(function(lock) {
             console.log("Lock acquired" + walletId);
 
             DbConn.Wallet.find({
@@ -53,7 +146,10 @@ var buyCredit = function (walletId, amount, user) {
                                     where: [{WalletId: wallet.WalletId}]
                                 }
                             ).then(function (cmp) {
-                            done();
+                                lock.unlock()
+                                    .catch(function (err) {
+                                        console.error(err);
+                                    });
                             if (cmp[0] === 1) {
                                 deferred.resolve(credit);
                             }
@@ -81,21 +177,33 @@ var buyCredit = function (walletId, amount, user) {
                             };
                             addHistory(data);
                         }).error(function (err) {
-                            done();
+                                lock.unlock()
+                                    .catch(function (err) {
+                                        console.error(err);
+                                    });
                             deferred.reject(err);
                         });
 
                     }, function (error) {
-                        done();
+                        lock.unlock()
+                            .catch(function (err) {
+                                console.error(err);
+                            });
                         deferred.reject(error);
                     });
                 }
                 else {
-                    done();
+                    lock.unlock()
+                        .catch(function (err) {
+                            console.error(err);
+                        });
                     deferred.reject(new Error("Invalid Wallet ID"));
                 }
             }).error(function (err) {
-                done();
+                lock.unlock()
+                    .catch(function (err) {
+                        console.error(err);
+                    });
                 deferred.reject(err);
             });
         });
@@ -110,8 +218,7 @@ var buyCredit = function (walletId, amount, user) {
 var deductCredit = function (reqData, wallet, credit, amount) {
 
     var deferred = Q.defer();
-
-    lock(wallet.WalletId, ttl, function (done) {
+    redlock.lock('lock:'+wallet.WalletId, ttl).then(function(lock) {
         if (wallet) {
             if (credit > amount) {
                 credit = credit - amount;
@@ -124,7 +231,10 @@ var deductCredit = function (reqData, wallet, credit, amount) {
                             where: [{WalletId: wallet.WalletId}]
                         }
                     ).then(function (cmp) {
-                    done();
+                        lock.unlock()
+                            .catch(function (err) {
+                                console.error(err);
+                            });
                     if (cmp[0] === 1) {
                         deferred.resolve(credit);
                     }
@@ -154,12 +264,18 @@ var deductCredit = function (reqData, wallet, credit, amount) {
                     };
                     addHistory(data);
                 }).error(function (error) {
-                    done();
+                        lock.unlock()
+                            .catch(function (err) {
+                                console.error(err);
+                            });
                     deferred.reject(error);
                 });
             }
             else {
-                done();
+                lock.unlock()
+                    .catch(function (err) {
+                        console.error(err);
+                    });
                 deferred.reject(new Error("Insufficient  Credit Balance."));
             }
         }
@@ -251,7 +367,7 @@ var deductCreditFromTemp = function (sessionId,reason,invokeBy, tenant, company)
                 }).then(function (wallet) {
                     if (wallet) {
                         var walletId = sessionId ? sessionId : wallet.WalletId;
-                        lock(walletId, ttl, function (done) {
+                        redlock.lock('lock:'+walletId, ttl).then(function(lock) {
                             var lockCredit = parseFloat(wallet.LockCredit) - parseFloat(amount);
                             if (lockCredit < 0) {
                                 deferred.reject(new Error("Invalid Amount. Please Contact System Administrator."));
@@ -280,7 +396,10 @@ var deductCreditFromTemp = function (sessionId,reason,invokeBy, tenant, company)
                                                 where: [{WalletId: wallet.WalletId}]
                                             }
                                         ).then(function (cmp) {
-                                        done();
+                                            lock.unlock()
+                                                .catch(function (err) {
+                                                    console.error(err);
+                                                });
                                         if (cmp[0] === 1) {
                                             deferred.resolve(true);
                                         }
@@ -310,11 +429,18 @@ var deductCreditFromTemp = function (sessionId,reason,invokeBy, tenant, company)
                                         };
                                         addHistory(data);
                                     }).error(function (error) {
-                                        done();
+                                            lock.unlock()
+                                                .catch(function (err) {
+                                                    console.error(err);
+                                                });
                                         deferred.reject(false);
                                     });
                                 }
                                 else {
+                                    lock.unlock()
+                                        .catch(function (err) {
+                                            console.error(err);
+                                        });
                                     deferred.reject(false);
                                 }
 
@@ -322,7 +448,10 @@ var deductCreditFromTemp = function (sessionId,reason,invokeBy, tenant, company)
                             }).error(function (err) {
                                 var jsonString = messageFormatter.FormatMessage(err, "EXCEPTION", false, undefined);
                                 logger.error('ValidateSessionData. - [%s] .', jsonString);
-                                done();
+                                    lock.unlock()
+                                        .catch(function (err) {
+                                            console.error(err);
+                                        });
                                 deferred.reject(false);
                             });
                         });
@@ -1412,7 +1541,7 @@ var LockCredit = function (sessionId, amount, invokeBy, reason, tenant, company)
                     return;
                 }
                 if (wallet) {
-                    lock(sessionId, ttl, function (done) {
+                    redlock.lock('lock:'+sessionId, ttl).then(function(lock) {
                         var credit = parseFloat(wallet.Credit);
                         var lockCredit = parseFloat(wallet.LockCredit);
                         if (credit > amount) {
@@ -1428,7 +1557,10 @@ var LockCredit = function (sessionId, amount, invokeBy, reason, tenant, company)
                                         where: [{WalletId: wallet.WalletId}]
                                     }
                                 ).then(function (cmp) {
-                                done();
+                                    lock.unlock()
+                                        .catch(function (err) {
+                                            console.error(err);
+                                        });
                                 if (cmp[0] === 1) {
                                     deferred.resolve(credit);
                                 }
@@ -1461,12 +1593,18 @@ var LockCredit = function (sessionId, amount, invokeBy, reason, tenant, company)
                                 addWalletSessionData(data);
                                 addHistory(data);
                             }).error(function (error) {
-                                done();
+                                    lock.unlock()
+                                        .catch(function (err) {
+                                            console.error(err);
+                                        });
                                 deferred.reject(error);
                             });
                         }
                         else {
-                            done();
+                            lock.unlock()
+                                .catch(function (err) {
+                                    console.error(err);
+                                });
                             deferred.reject(new Error("Insufficient  Credit Balance."));
                         }
                     });

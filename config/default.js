@@ -8,11 +8,33 @@ module.exports = {
         "Database": "duo"
     },
     "Redis": {
+        "mode": "sentinel",//instance, cluster, sentinel
         "ip": "45.55.142.207",
         "port": 6389,
-        "password":"DuoS123",
-        "redisdb":0,
-        "ttl":30000
+        "user": "duo",
+        "db": 0,
+        "password": "DuoS123",
+        "ttl": 30000,
+        "sentinels": {
+            "hosts": "138.197.90.92,45.55.205.92,138.197.90.92",
+            "port": 16389,
+            "name": "redis-cluster"
+        }
+
+    },
+
+    "Security": {
+
+        "ip": "45.55.142.207",
+        "port": 6389,
+        "user": "duo",
+        "password": "DuoS123",
+        "mode": "sentinel",//instance, cluster, sentinel
+        "sentinels": {
+            "hosts": "138.197.90.92,45.55.205.92,138.197.90.92",
+            "port": 16389,
+            "name": "redis-cluster"
+        }
     },
 
     "Host": {
@@ -22,14 +44,8 @@ module.exports = {
         "hostpath": "./config",
         "logfilepath": ""
     },
-    "Security": {
-        "ip" : "45.55.142.207",
-        "port": 6389,
-        "password":"DuoS123",
-		"key":""
-    },
-    "RabbitMQ":
-    {
+
+    "RabbitMQ": {
         "ip": "45.55.142.207",
         "port": 5672,
         "user": "guest",
@@ -42,7 +58,7 @@ module.exports = {
         "limitServicePort": 8084,
         "limitServiceVersion": "6.0",
         "trunkServiceHost": "192.168.0.89",
-        "trunkServicePort":9898 ,
+        "trunkServicePort": 9898,
         "trunkServiceVersion": "1.0.0.0",
         "voxboneUrl": "https://sandbox.voxbone.com/ws-voxbone/services/rest"
 
