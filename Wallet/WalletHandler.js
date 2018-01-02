@@ -1483,10 +1483,10 @@ module.exports.getWalletHistory = function (req, res) {
      where: [{Owner: req.user.iss}, {TenantId: req.user.tenant}, {CompanyId: req.user.company}, {Status: true}]
      }).then(function (walletData) {
      var jsonString ;
-     if (walletData) {*/
+     if (walletData) , {Operation: 'ChargesForCall'} {*/
 
     DbConn.WalletHistory.findAll({
-        where: [{TenantId: req.user.tenant}, {CompanyId: req.user.company}, {Operation: 'ChargesForCall'}],
+        where: [{TenantId: req.user.tenant}, {CompanyId: req.user.company}],
         order: [['createdAt', 'DESC']],
         offset: ((pageNo - 1) * rowCount),
         limit: rowCount
