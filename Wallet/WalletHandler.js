@@ -42,7 +42,7 @@ var redisSetting =  {
 
 if(redismode == 'sentinel'){
 
-    if(config.Redis.sentinels && config.Redis.sentinels.hosts && config.Redis.sentinels.port, config.Redis.sentinels.name){
+    if(config.Redis.sentinels && config.Redis.sentinels.hosts && config.Redis.sentinels.port && config.Redis.sentinels.name){
         var sentinelHosts = config.Redis.sentinels.hosts.split(',');
         if(Array.isArray(sentinelHosts) && sentinelHosts.length > 2){
             var sentinelConnections = [];
@@ -1483,10 +1483,10 @@ module.exports.getWalletHistory = function (req, res) {
      where: [{Owner: req.user.iss}, {TenantId: req.user.tenant}, {CompanyId: req.user.company}, {Status: true}]
      }).then(function (walletData) {
      var jsonString ;
-     if (walletData) {*/
+     if (walletData) , {Operation: 'ChargesForCall'} {*/
 
     DbConn.WalletHistory.findAll({
-        where: [{TenantId: req.user.tenant}, {CompanyId: req.user.company}, {Operation: 'ChargesForCall'}],
+        where: [{TenantId: req.user.tenant}, {CompanyId: req.user.company}],
         order: [['createdAt', 'DESC']],
         offset: ((pageNo - 1) * rowCount),
         limit: rowCount

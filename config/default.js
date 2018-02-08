@@ -9,7 +9,7 @@ module.exports = {
     },
     "Redis": {
         "mode": "sentinel",//instance, cluster, sentinel
-        "ip": "45.55.142.207",
+        "ip": "45.55.205.92",
         "port": 6389,
         "user": "duo",
         "db": 0,
@@ -25,7 +25,7 @@ module.exports = {
 
     "Security": {
 
-        "ip": "45.55.142.207",
+        "ip": "45.55.205.92",
         "port": 6389,
         "user": "duo",
         "password": "DuoS123",
