@@ -261,7 +261,7 @@ var deductCredit = function (reqData, wallet, credit, amount) {
                         Reason: reqData.Reason ? reqData.Reason : "Deduct Credit using Credit Card",
                         SessionID: reqData.SessionID
                     };
-                    data.Credit = credit + wallet.LockCredit? parseFloat(wallet.LockCredit):0;
+                    data.Credit = credit + (wallet.LockCredit? parseFloat(wallet.LockCredit):0);
                     addHistory(data);
                 }).error(function (error) {
                         lock.unlock()
