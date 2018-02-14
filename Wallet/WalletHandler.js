@@ -1641,12 +1641,12 @@ var ReleaseCredit = function (sessionId, amount, invokeBy, reason, tenant, compa
                 if (wallet) {
                     var walletId = sessionId ? sessionId : wallet.WalletId;
                     lock(walletId, ttl, function (done) {
-                        var lockCredit = parseFloat(wallet.LockCredit) - parseFloat(amount);
+                        var lockCredit = (parseFloat(wallet.LockCredit) - parseFloat(amount));
                         if (lockCredit < 0) {
                             deferred.reject(new Error("Invalid Amount. Please Contact System Administrator."));
                             return;
                         }
-                        var credit = parseFloat(wallet.Credit) + parseFloat(amount);
+                        var credit = (parseFloat(wallet.Credit) + parseFloat(amount));
                         DbConn.Wallet
                             .update(
                                 {
