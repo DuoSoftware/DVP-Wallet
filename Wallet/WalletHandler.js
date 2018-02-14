@@ -244,8 +244,7 @@ var deductCredit = function (reqData, wallet, credit, amount) {
                     var data = {
                         StripeId: undefined,
                         Description: reqData.description,
-                        CurrencyISO: undefined,
-                        Credit: credit + parseFloat(wallet.LockCredit),
+                        CurrencyISO: undefined,                        
                         DeductCredit: amount,
                         Tag: undefined,
                         TenantId: reqData.user.tenant,
@@ -262,6 +261,7 @@ var deductCredit = function (reqData, wallet, credit, amount) {
                         Reason: reqData.Reason ? reqData.Reason : "Deduct Credit using Credit Card",
                         SessionID: reqData.SessionID
                     };
+                    data.Credit = credit + wallet.LockCredit? parseFloat(wallet.LockCredit):0;
                     addHistory(data);
                 }).error(function (error) {
                         lock.unlock()
@@ -410,7 +410,7 @@ var deductCreditFromTemp = function (sessionId,reason,invokeBy, tenant, company)
                                             StripeId: undefined,
                                             Description: "Release Locked Amount And Deduct",
                                             CurrencyISO: undefined,
-                                            Credit: credit + parseFloat(wallet.LockCredit),
+                                            Credit: credit +(wallet.LockCredit? parseFloat(wallet.LockCredit):0),
                                             DeductCredit: amount,
                                             Tag: undefined,
                                             TenantId: tenant,
@@ -1543,7 +1543,7 @@ var LockCredit = function (sessionId, amount, invokeBy, reason, tenant, company)
                 if (wallet) {
                     redlock.lock('lock:'+sessionId, ttl).then(function(lock) {
                         var credit = parseFloat(wallet.Credit);
-                        var lockCredit = parseFloat(wallet.LockCredit);
+                        var lockCredit = (wallet.LockCredit? parseFloat(wallet.LockCredit):0);
                         if (credit > amount) {
                             credit = credit - amount;
                             lockCredit = lockCredit + amount;
