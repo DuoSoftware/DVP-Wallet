@@ -534,6 +534,8 @@ module.exports.CreateWallet = function (req, res) {
 
     directPayment.CustomerRegister(req.headers['api_key'], req.body).then(function (customer) {
 
+
+        console.log("CustomerRegister............... : "+req.headers['api_key']);
         DbConn.Wallet
             .create(
                 {
