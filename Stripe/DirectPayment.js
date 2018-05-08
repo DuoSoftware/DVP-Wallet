@@ -76,16 +76,14 @@ module.exports.DeleteCustomer = function (data) {
 
 module.exports.CustomerRegister = function (token,data) {
     var deferred = Q.defer();
-    console.log("CustomerRegister11111111111............... : "+token);
+
     stripe.customers.create({
         source: token,
         description: data.Description
     }, function(err, customer) {
         if(err){
-            console.log("CustomerRegister222222222222222............... : "+token);
             deferred.reject(err);
         }else{
-            console.log("CustomerRegister33333333333333............... : "+token);
             deferred.resolve(customer);
         }
     });
