@@ -12,7 +12,9 @@ var async = require("async");
 var config = require('config');
 var directPayment = require('../Stripe/DirectPayment');
 var Q = require('q');
-var Redlock = require('redlock')
+var Redlock = require('redlock');
+var util = require('util');
+
 
 
 var ttl = config.Redis.ttl;
@@ -479,14 +481,38 @@ module.exports.DeductCreditFromTemp = deductCreditFromTemp;
 
 module.exports.CreatePackage = function (req, res) {
 
-    directPayment.DirectPayment(req.body).then(function (customer) {
+    var tagString ="";
+    if(req.body.Tag)
+    {
+        var len = req.body.Tag.length;
+        if(len>0)
+        {
+
+            req.body.Tag.forEach(function (item,index) {
+                
+                if(index==0)
+                {
+                    tagString = item.toString();
+                }
+                else
+                {
+                    tagString = tagString +","+item.toString();
+                }
+                    
+
+            });
+        }
+
+    }
+
+    directPayment.DirectPament(req.body).then(function (customer) {
         DbConn.Wallet
             .create(
                 {
                     Owner: req.user.iss,
                     StripeId: customer.id,
                     Description: req.body.Description,
-                    Tag: req.body.Tag,
+                    Tag: tagString,
                     CurrencyISO: req.body.CurrencyISO,
                     Credit: req.body.Credit,
                     Status: true,
@@ -506,7 +532,7 @@ module.exports.CreatePackage = function (req, res) {
                 Description: req.body.Description,
                 CurrencyISO: req.body.CurrencyISO,
                 Credit: 0,
-                Tag: req.body.Tag,
+                Tag: tagString,
                 TenantId: req.user.tenant,
                 CompanyId: req.user.company,
                 OtherJsonData: {"msg": "Create New Wallet", "invokeBy": req.user.iss},
@@ -1409,6 +1435,14 @@ var ValidateSessionData = function (data) {
 
 var addHistory = function (data) {
 
+    if(data.OtherJsonData && util.isObject(data.OtherJsonData))
+    {
+
+        var dataString = JSON.stringify(data.OtherJsonData);
+        data.OtherJsonData=dataString;
+    }
+    
+    
     DbConn.WalletHistory
         .create(
             {
