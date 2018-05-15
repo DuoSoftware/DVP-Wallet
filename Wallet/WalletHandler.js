@@ -1531,6 +1531,17 @@ module.exports.getWalletHistory = function (req, res) {
         var jsonString;
         if (walletHistory) {
 
+            var HistoryObj = walletHistory.map(function (item) {
+               
+                if(item.OtherJsonData)
+                {
+                    var dataObj = JSON.parse(item.OtherJsonData);
+                    item.OtherJsonData=dataObj;
+                }
+                return item;
+                
+            });
+            
             jsonString = messageFormatter.FormatMessage(undefined, "SUCCESS", true, walletHistory);
             res.end(jsonString);
         }
