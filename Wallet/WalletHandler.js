@@ -1438,8 +1438,7 @@ var addHistory = function (data) {
     if(data.OtherJsonData && util.isObject(data.OtherJsonData))
     {
 
-        var dataString = JSON.stringify(data.OtherJsonData);
-        data.OtherJsonData=dataString;
+        data.OtherJsonData = JSON.stringify(data.OtherJsonData);
     }
     
     
@@ -1461,6 +1460,11 @@ var addHistory = function (data) {
                 SessionID: data.SessionID
             }
         ).then(function (cmp) {
+
+            if(cmp.OtherJsonData)
+            {
+                cmp.OtherJsonData=JSON.parse(cmp.OtherJsonData);
+            }
         var jsonString = messageFormatter.FormatMessage(undefined, "EXCEPTION", true, cmp);
         logger.info('addHistory - Create WalletHistory - [%s] .', jsonString);
     }).error(function (err) {
@@ -1535,8 +1539,7 @@ module.exports.getWalletHistory = function (req, res) {
                
                 if(item.OtherJsonData)
                 {
-                    var dataObj = JSON.parse(item.OtherJsonData);
-                    item.OtherJsonData=dataObj;
+                    item.OtherJsonData = JSON.parse(item.OtherJsonData);
                 }
                 return item;
                 
