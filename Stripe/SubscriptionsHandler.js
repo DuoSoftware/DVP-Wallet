@@ -12,7 +12,7 @@ var xpath = require('xpath');
 var dom = require('xmldom').DOMParser;
 var dbHandler = require('./../DbHandler');
 
-var stripe = require("stripe")("sk_test_36ABwTvXB7oQbJ9704znf0m5");
+var stripe = require("stripe")("");
 
 module.exports.CreatePlan = function (req,res) {
 

@@ -7,7 +7,7 @@ var logger = require('dvp-common/LogHandler/CommonLogHandler.js').logger;
 var DbConn = require('dvp-dbmodels');
 var moment = require('moment');
 var Q = require('q');
-var stripe = require("stripe")("sk_test_36ABwTvXB7oQbJ9704znf0m5");
+var stripe = require("stripe")("");
 
 module.exports.DirectPayment = function (data,res) {
 
