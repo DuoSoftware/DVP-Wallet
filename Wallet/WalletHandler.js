@@ -1752,3 +1752,6 @@ module.exports.ReleaseCreditFromCustomer = function (req, res) {
     }
 
 };
+
+module.exports.RedisConn = client;
+module.exports.pgConn = DbConn.SequelizeConn;
