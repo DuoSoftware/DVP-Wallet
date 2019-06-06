@@ -121,7 +121,7 @@ var redlock = new Redlock(
 );
 
 
-var buyCredit = function (walletId, amount, user) {
+var buyCredit = function (walletId, amount, user, reason) {
 
     var deferred = Q.defer();
 
@@ -130,10 +130,10 @@ var buyCredit = function (walletId, amount, user) {
             console.log("Lock acquired" + walletId);
 
             DbConn.Wallet.find({
-                where: [{WalletId: walletId}, {Owner: user.iss}, {TenantId: user.tenant}, {CompanyId: user.company}, {Status: true}]
+                where: [{WalletId: walletId}, {TenantId: user.tenant}, {CompanyId: user.company}, {Status: true}]
             }).then(function (wallet) {
                 if (wallet) {
-                    amount = parseFloat(amount);
+                    amount = Math.ceil(parseFloat(amount));
                     // buy credit form strip
                     directPayment.BuyCredit(wallet, amount).then(function (charge) {
                         var credit = parseFloat(wallet.Credit) + amount;
@@ -173,7 +173,7 @@ var buyCredit = function (walletId, amount, user) {
                                 WalletId: cmp.WalletId,
                                 Operation: 'BuyCredit',
                                 InvokeBy: user.iss,
-                                Reason: "Buy Credit using Credit Card"
+                                Reason: reason || "Buy Credit using Credit Card"
                             };
                             addHistory(data);
                         }).error(function (err) {
@@ -294,6 +294,12 @@ var deductCreditFromCustomer = function (reqData, amountDeduct, callback) {
             var credit = parseFloat(wallet.Credit);
             if (credit >= amount) {
                 deductCredit(reqData, wallet, credit, amount).then(function (cmp) {
+                    //auto recharge if credit level falls below the auto recharge threshold amount.
+                    if(wallet.AutoRecharge && cmp < wallet.ThresholdValue){
+                        var amount = Math.ceil(parseFloat(wallet.AutoRechargeAmount - cmp));
+                        buyCredit(wallet.WalletId, amount, reqData.user, "Auto Recharge");
+                    }
+
                     var jsonString = messageFormatter.FormatMessage(undefined, "EXCEPTION", true, cmp);
                     logger.info('DeductCredit - Update Wallet - [%s] .', jsonString);
                     callback(jsonString);
@@ -1752,3 +1758,6 @@ module.exports.ReleaseCreditFromCustomer = function (req, res) {
     }
 
 };
+
+module.exports.RedisConn = client;
+module.exports.pgConn = DbConn.SequelizeConn;

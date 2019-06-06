@@ -15,6 +15,8 @@ var walletHandler = require('./Wallet/WalletHandler');
 var webhookHandler = require('./Stripe/WebhookHandler');
 var directPayment = require('./Stripe/DirectPayment');
 var fs = require('fs');
+var healthcheck = require('dvp-healthcheck/DBHealthChecker');
+
 //-------------------------  Restify Server ------------------------- \\
 
 var jwt = require('restify-jwt');
@@ -47,6 +49,9 @@ var setup_server = function (RestServer) {
     RestServer.use(restify.queryParser());
     RestServer.use(restify.bodyParser());
     RestServer.use(jwt({secret: secret.Secret}));
+
+    var hc = new healthcheck(RestServer, {redis: walletHandler.RedisConn, pg: walletHandler.pgConn});
+    hc.Initiate();
 
     RestServer.post('/DVP/API/' + version + '/PaymentManager/Wallet/Package', authorization({
         resource: "wallet",
