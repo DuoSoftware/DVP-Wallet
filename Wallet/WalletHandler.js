@@ -39,6 +39,11 @@ var redisSetting =  {
     }
 };
 
+var TxnTypes = {
+    Credits: 'credits',
+    Packages: 'packages',
+    Calls: 'calls'
+};
 
 if(redismode == 'sentinel'){
 
@@ -173,7 +178,8 @@ var buyCredit = function (walletId, amount, user, reason) {
                                 WalletId: cmp.WalletId,
                                 Operation: 'BuyCredit',
                                 InvokeBy: user.iss,
-                                Reason: reason || "Buy Credit using Credit Card"
+                                Reason: reason || "Buy Credit using Credit Card",
+                                TxnType: TxnTypes.Credits
                             };
                             addHistory(data);
                         }).error(function (err) {
@@ -259,7 +265,8 @@ var deductCredit = function (reqData, wallet, credit, amount) {
                         Operation: 'DeductCredit',
                         InvokeBy: reqData.name ? reqData.name : reqData.user.iss,
                         Reason: reqData.Reason ? reqData.Reason : "Deduct Credit using Credit Card",
-                        SessionID: reqData.SessionID
+                        SessionID: reqData.SessionID,
+                        TxnType: reqData.TxnType
                     };
                     data.Credit = credit + (wallet.LockCredit? parseFloat(wallet.LockCredit):0);
                     addHistory(data);
@@ -574,7 +581,8 @@ module.exports.CreateWallet = function (req, res) {
                 WalletId: cmp.WalletId,
                 Operation: 'CreateWallet',
                 InvokeBy: req.user.iss,
-                Reason: "Create Wallet"
+                Reason: "Create Wallet",
+                TxnType: TxnTypes.Credits
             };
             addHistory(data);
         }).error(function (err) {
@@ -685,7 +693,8 @@ module.exports.UpdateWallet = function (req, res) {
             WalletId: cmp.WalletId,
             Operation: 'UpdateWallet',
             InvokeBy: req.user.iss,
-            Reason: "Apply Configurations"
+            Reason: "Apply Configurations",
+            TxnType: TxnTypes.Credits
         };
         addHistory(data);
     }).error(function (err) {
@@ -1027,7 +1036,8 @@ module.exports.DeductCreditFormCustomer = function (req, res) {
         name: req.body.name,
         OtherJsonData: req.body.OtherJsonData,
         Reason: req.body.Reason,
-        SessionID: req.body.SessionId
+        SessionID: req.body.SessionId,
+        TxnType: TxnTypes[req.body.TxnType]
     };
 
     deductCreditFromCustomer(reqData, req.body.Amount, function (jsonString) {
@@ -1172,7 +1182,8 @@ module.exports.AddNewCard = function (req, res) {
                     TenantId: req.user.tenant,
                     CompanyId: req.user.company,
                     OtherJsonData: {"msg": "AddNewCard", "Data": customer, "invokeBy": req.user.iss},
-                    WalletId: wallet.WalletId
+                    WalletId: wallet.WalletId,
+                    TxnType: TxnTypes.Credits
                 };
                 addHistory(data);
 
@@ -1216,7 +1227,8 @@ module.exports.RemoveCard = function (req, res) {
                                 TenantId: req.user.tenant,
                                 CompanyId: req.user.company,
                                 OtherJsonData: {"msg": "RemoveCard", "Data": customer, "invokeBy": req.user.iss},
-                                WalletId: wallet.WalletId
+                                WalletId: wallet.WalletId,
+                                TxnType: TxnTypes.Credits
                             };
                             addHistory(data);
                         }
@@ -1314,7 +1326,8 @@ module.exports.SetDefaultCard = function (req, res) {
                     TenantId: req.user.tenant,
                     CompanyId: req.user.company,
                     OtherJsonData: {"msg": "SetDefaultCard", "Data": cards, "invokeBy": req.user.iss},
-                    WalletId: wallet.WalletId
+                    WalletId: wallet.WalletId,
+                    TxnType: TxnTypes.Credits
                 };
                 addHistory(data);
 
@@ -1430,7 +1443,8 @@ var addHistory = function (data) {
                 Operation: data.Operation,
                 InvokeBy: data.InvokeBy,
                 Reason: data.Reason,
-                SessionID: data.SessionID
+                SessionID: data.SessionID,
+                TxnType: data.TxnType
             }
         ).then(function (cmp) {
         var jsonString = messageFormatter.FormatMessage(undefined, "EXCEPTION", true, cmp);
@@ -1470,7 +1484,8 @@ var calculateChargeForSession = function (sessionId, credit, tenant, company, re
                 Operation: 'ChargesForCall',
                 InvokeBy: invokeBy,
                 Reason: reason ? reason : "ChargesForCall",
-                SessionID: sessionId
+                SessionID: sessionId,
+                TxnType: TxnTypes.Calls
             };
             addHistory(data)
         }
@@ -1485,8 +1500,14 @@ module.exports.getWalletHistory = function (req, res) {
 
     var pageNo = req.params.pageNo;
     var rowCount = req.params.rowCount;
+    var filters = [
+        {TenantId: req.user.tenant},
+        {CompanyId: req.user.company}
+    ];
 
-
+    if(req.query && req.query.type && req.query.type != '' && req.query.type != 'all'){
+        filters.push({ TxnType: req.query.type });
+    }
     /*DbConn.Wallet.find({
      where: [{Owner: req.user.iss}, {TenantId: req.user.tenant}, {CompanyId: req.user.company}, {Status: true}]
      }).then(function (walletData) {
@@ -1494,7 +1515,7 @@ module.exports.getWalletHistory = function (req, res) {
      if (walletData) , {Operation: 'ChargesForCall'} {*/
 
     DbConn.WalletHistory.findAll({
-        where: [{TenantId: req.user.tenant}, {CompanyId: req.user.company}],
+        where: filters,
         order: [['createdAt', 'DESC']],
         offset: ((pageNo - 1) * rowCount),
         limit: rowCount
@@ -1596,7 +1617,8 @@ var LockCredit = function (sessionId, amount, invokeBy, reason, tenant, company)
                                     Operation: 'DeductCredit',
                                     InvokeBy: invokeBy,
                                     Reason: reason ? reason : "Credit Locked By System",
-                                    SessionID: sessionId
+                                    SessionID: sessionId,
+                                    TxnType: TxnTypes.Calls
                                 };
                                 addWalletSessionData(data);
                                 addHistory(data);
@@ -1691,7 +1713,8 @@ var ReleaseCredit = function (sessionId, amount, invokeBy, reason, tenant, compa
                                 Operation: 'DeductCredit',
                                 InvokeBy: invokeBy,
                                 Reason: reason ? reason : "Credit Released By System",
-                                SessionID: sessionId
+                                SessionID: sessionId,
+                                TxnType: TxnTypes.Credits
                             };
                             DeleteWalletSessionData(data);
                             addHistory(data);
