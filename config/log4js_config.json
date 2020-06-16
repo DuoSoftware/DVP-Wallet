@@ -3,21 +3,20 @@
     {
       "type": "fileSync",
       "filename": "app.log",
-      "level":"DEBUG",
+      "level": "DEBUG",
       "category": "app"
     },
     {
       "type": "fileSync",
       "filename": "Limit.log",
-      "level":"DEBUG",
+      "level": "DEBUG",
       "category": "limapi"
     },
     {
       "type": "fileSync",
       "filename": "CallServerPicker.log",
-      "level":"DEBUG",
+      "level": "DEBUG",
       "category": "shdlapi"
     }
-
   ]
 }
