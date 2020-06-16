@@ -49,11 +49,11 @@ module.exports = {
   },
 
   Services: {
-    limitServiceHost: "SYS_LIMITSERVICE_HOST",
-    limitServicePort: "SYS_LIMITSERVICE_PORT",
+    limitServiceHost: "SYS_LIMITHANDLER_HOST",
+    limitServicePort: "SYS_LIMITHANDLER_PORT",
     limitServiceVersion: "SYS_LIMITSERVICE_VERSION",
     trunkServiceHost: "SYS_PHONENUMBERTRUNK_HOST",
-    trunkServicePort: "SYS_PHONENUMBERTRUNKE_PORT",
+    trunkServicePort: "HOST_PHONENUMBERTRUNKSERVICE_PORT",
     trunkServiceVersion: "SYS_PHONENUMBERTRUNK_VERSION",
     voxboneUrl: "SYS_VOXBONE_URL",
   },
