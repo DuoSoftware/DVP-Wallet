@@ -20,7 +20,9 @@ module.exports = {
     ip: "SYS_REDIS_HOST",
     port: "SYS_REDIS_PORT",
     user: "SYS_REDIS_USER",
+    db: "SYS_REDIS_DB_CONFIG",
     password: "SYS_REDIS_PASSWORD",
+    ttl:"SYS_TTL",
     sentinels: {
       hosts: "SYS_REDIS_SENTINEL_HOSTS",
       port: "SYS_REDIS_SENTINEL_PORT",
